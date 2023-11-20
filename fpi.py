@@ -26,7 +26,7 @@ from ye import *
 parser = argparse.ArgumentParser(description='BOOND - A Content Delivery Network recon tool')
 
 parser.add_argument('target_domain', metavar='domain', help='Domain to scan')
-parser.add_argument('-c', '--config', help='Configuration file (see GitHub for syntax)')
+
 parser.add_argument('--write', action='store_true', help="Write results to a target.com-results.txt file")
 
 args = parser.parse_args()
