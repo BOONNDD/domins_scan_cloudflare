@@ -1,0 +1,8 @@
+bs4==0.0.1
+colorama==0.4.4
+dnspython==2.1.0
+gevent==21.1.2
+pyfiglet==0.8.post1
+pysecuritytrails==0.2.6
+requests==2.26.0
+shodan==1.25.0
