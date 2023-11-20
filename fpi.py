@@ -21,7 +21,7 @@ from gevent import Timeout
 from pyfiglet import Figlet
 import requests
 import random
-from fpi import *
+from ye import *
 
 parser = argparse.ArgumentParser(description='BOOND - A Content Delivery Network recon tool')
 
