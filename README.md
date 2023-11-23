@@ -1,4 +1,4 @@
-7# BOOND - Domain Reconnaissance Tool
+# BOOND - Domain Reconnaissance Tool
 
 ## Description
 BOOND is a Content Delivery Network (CDN) reconnaissance tool written in Python. It is designed to help security professionals and researchers gather information about a target domain, including subdomains, IP addresses, SSL certificates, and potential cloud service providers.
@@ -30,7 +30,7 @@ BOOND is a Content Delivery Network (CDN) reconnaissance tool written in Python.
    git clone https://github.com/BOONNDD/domins_scan_cloudflare.git
    cd domins_scan_cloudflare
    pip install -r requirements.txt
-   python boond.py-h
+   python3 boond.py -h
    ```
 
    - Optional: Use the `--write` flag to save results to a file.
