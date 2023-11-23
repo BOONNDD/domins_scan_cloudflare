@@ -165,7 +165,7 @@ def securitytrails_get_subdomains():
 def sub_enum():
     print(f"{Fore.MAGENTA}[+]{Style.RESET_ALL} Checking common subdomains . . .")
     for subdomain in subdomains:
-        url = f'http://{subdomain}.{target_domain}'  # Requests needs a valid HTTP(s) schema
+        url = f'http://{subdomain}.{target_domain}'
         sub_enum_agent = {
             'User-Agent': random.choice(user_agent_strings)
         }
@@ -178,7 +178,7 @@ def sub_enum():
         except ConnectionRefusedError:
             pass
         else:
-            final_url = url.replace("http://", "")  # (?) socket.gethostbyname doesn't like "http://"
+            final_url = url.replace("http://", "") 
             print(f"{Fore.CYAN}[+]{Style.RESET_ALL} {Fore.GREEN}{final_url}{Style.RESET_ALL} is a valid domain")
             if subdomain in valid_subdomains is not None:
                 pass
@@ -190,39 +190,55 @@ def sub_ip():
     for subdomain in valid_subdomains:
         try:
             subdomain_ip = socket.gethostbyname(subdomain)
+            print(f"{Fore.CYAN}[+]{Style.RESET_ALL} {Fore.GREEN}{subdomain}{Style.RESET_ALL}  {Fore.GREEN}{subdomain_ip}{Style.RESET_ALL}")
+            if subdomain_ip not in ip_addresses:
+                ip_addresses.append(subdomain_ip)
         except socket.gaierror:
             print(f"{Fore.RED}[-]{Style.RESET_ALL}  {Fore.RED}{subdomain}{Style.RESET_ALL}")
-        else:
-            print(f"{Fore.CYAN}[+]{Style.RESET_ALL} {Fore.GREEN}{subdomain}{Style.RESET_ALL}  {Fore.GREEN}{subdomain_ip}{Style.RESET_ALL}")
-            if subdomain_ip in ip_addresses is not None:
-                pass
-            else:
-                ip_addresses.append(subdomain_ip)
+        except Exception as e:
+            print(f"{Fore.RED}[-]{Style.RESET_ALL} Error getting IP for {Fore.RED}{subdomain}{Style.RESET_ALL}: {e}")
 
 def is_cf_ip():
     for ip in ip_addresses:
-        print(f"{Fore.MAGENTA}[+]{Style.RESET_ALL}  {Fore.GREEN}{ip}{Style.RESET_ALL}  Cloudflar")
         agent = random.choice(user_agent_strings)
         is_cf_agent = {
             'User-Agent': agent
         }
+        if write:
+            with open(f"{target_domain}.ip.txt", "a") as ip_file:
+                ip_file.write(f"{ip}\n")
         try:
             head = requests.head(f"http://{ip}", headers=is_cf_agent, timeout=5)
             headers = head.headers
-            global ip_country
-            ip_country = requests.get(f"http://ip-api.com/csv/{ip}?fields=country").text.strip()
-            if 'CF-ray' in headers is not None:
-                cloudflare = True
-                print(f"{Fore.CYAN}[+]{Style.RESET_ALL} {Fore.CYAN}{ip}{Style.RESET_ALL} is Cloudflare")
-                ray_id = head.headers['CF-ray']
-                print(f"{Fore.CYAN}[+]{Style.RESET_ALL} Ray-ID: {Fore.CYAN}{ray_id}{Style.RESET_ALL}")
-                print(f"{Fore.CYAN}[+]{Style.RESET_ALL} Country: {ip_country}")
-            if 'CF-ray' not in headers:
-                print(f"{Fore.GREEN}[-]{Style.RESET_ALL} {Fore.RED}{ip}{Style.RESET_ALL} is NOT Cloudflare")
-                if ip in not_cloudflare is not None:
-                    pass
+            
+            if 'CF-RAY' in headers:
+                print(f"{Fore.GREEN}[+]{Style.RESET_ALL} {Fore.GREEN}{ip}{Style.RESET_ALL} is Cloudflare")
+                ray_id = head.headers['CF-RAY']
+                print(f"{Fore.CYAN}[+]{Style.RESET_ALL} CF-RAY: {Fore.GREEN}{ray_id}{Style.RESET_ALL}")
+                status_code = head.status_code
+                if status_code == 200:
+                    print(f"{Fore.GREEN}[+]{Style.RESET_ALL} {ip} : {status_code}")
+                elif status_code == 301:
+                    print(f"{Fore.YELLOW}[+]{Style.RESET_ALL} {ip} Code: {status_code}")
+                elif status_code == 403:
+                    print(f"{Fore.RED}[+]{Style.RESET_ALL} {ip} Code: {status_code}")
                 else:
-                    not_cloudflare.append(ip)
+                    print(f"{Fore.WHITE}[+]{Style.RESET_ALL} {ip} Code: {status_code}")
+
+            else:
+                print(f"{Fore.GREEN}[-]{Style.RESET_ALL} {Fore.RED}{ip}{Style.RESET_ALL}")
+
+           
+                status_code = head.status_code
+                if status_code == 200:
+                    print(f"{Fore.GREEN}[+]{Style.RESET_ALL} {ip} Code: {status_code}")
+                elif status_code == 301:
+                    print(f"{Fore.YELLOW}[+]{Style.RESET_ALL} {ip} Code: {status_code}")
+                elif status_code == 403:
+                    print(f"{Fore.RED}[+]{Style.RESET_ALL} {ip} Code: {status_code}")
+                else:
+                    print(f"{Fore.WHITE}[+]{Style.RESET_ALL} {ip} Code: {status_code}")
+
         except ConnectionError:
             print(f"{Fore.RED}[-]{Style.RESET_ALL} Couldn't connect to {Fore.GREEN}{ip}{Style.RESET_ALL}, skipping . . .")
         except ConnectionRefusedError:
@@ -303,92 +319,6 @@ def shodan_lookup_main():
         print(f"{Fore.RED}[-]{Style.RESET_ALL} No Shodan API key supplied or the key is invalid")
 
 
-def subcert_query(domain_name, outputfile):
-    regex = "^((?!-)[A-Za-z0-9-]" + "{1,63}(?<!-)\\.)" + "+[A-Za-z]{2,6}"
-
-    p = re.compile(regex)
-
-    if re.search(p, domain_name):
-        print(Fore.BLUE + "=========================================================")
-    else:
-        print("Invalid Domain Name")
-        sys.exit(0)
-
-    user_agents = []
-    user_agents.append('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/605.1.15 (KHTML, like Gecko)')
-    user_agents.append('Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko')
-    user_agents.append(
-        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36')
-    user_agents.append(
-        'Mozilla/5.0 (X11; CrOS armv7l 12105.100.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.144 Safari/537.36')
-
-    url = "https://crt.sh/?q=" + domain_name + "&output=json"
-    headers = {}
-    headers['User-Agent'] = secrets.choice(user_agents)
-
-    resp = requests.get(url, headers=headers)
-    resp = resp.text
-    site_json = json.loads(resp)
-    if len(site_json) < 2:
-        print("\n[" + Fore.RED + "*" + Fore.WHITE + "] " + "No Results Found \n")
-        sys.exit(0)
-
-    first_list = []
-    temp_list = []
-    temp2_list = []
-    temp3_list = []
-    final_list = []
-
-    for i in site_json:
-        name = str(i['name_value'])
-        first_list.append(name)
-
-    for j in first_list:
-        if j not in temp_list:
-            temp_list.append(j)
-
-    for k in range(len(temp_list)):
-        a = temp_list[k]
-        b = a.split('\n')
-        temp2_list.append(b)
-
-    def remove_nested(temp2_list):
-        for i in temp2_list:
-            if type(i) == list:
-                remove_nested(i)
-            else:
-                temp3_list.append(i)
-
-    remove_nested(temp2_list)
-
-    for i in temp3_list:
-        if i not in final_list:
-            final_list.append(i)
-
-    ip = ''
-
-    if outputfile:
-        f = open(outputfile, "a+")
-
-    with Timeout(10):
-        for i in final_list:
-            try:
-                if re.search(p, i):
-                    ip = socket.gethostbyname(i)
-                    if not ip:
-                        continue
-                    else:
-                        print(" [" + Fore.GREEN + "*" + Fore.WHITE + "] " + str(ip) + "   -   " + str(i))
-                    if outputfile:
-                        f.write(str(i) + "\n")
-            except:
-                print(" [" + Fore.GREEN + "*" + Fore.WHITE + "] " + str(ip) + "   -   www." + str(i))
-                continue
-
-    if outputfile:
-        f.close()
-
-
 def separator():
     print(f"{Fore.YELLOW}={Style.RESET_ALL}" * 50)
 
@@ -412,6 +342,7 @@ def main():
         thread(dnsdumpster)
         thread(certificate_search)
         thread(sub_enum)
+        is_cf_ip()
         if api_keys.securitytrails is not None:
             thread(securitytrails_get_subdomains)
         if api_keys.securitytrails is None:
@@ -426,17 +357,12 @@ def main():
             separator()
             print(f"{Fore.RED}[-]{Style.RESET_ALL} No Shodan API key supplied, skipping . . .")
         if write:
-            with open(f"{target_domain}-results.txt", "w") as file:
+            with open(f"{target_domain}.txt", "w") as file:
                 for subdomain in valid_subdomains:
-                    file.write(f"VALID SUBDOMAIN: {subdomain}\n")
+                    file.write(f"{subdomain}\n")
                 for ip in not_cloudflare:
-                    file.write(f"LEAKED IP: {ip}\n")
-            print(f"{Fore.CYAN}[+]{Style.RESET_ALL} Saved results in {Fore.GREEN}{target_domain}-results.txt{Style.RESET_ALL}")
-
-        separator()
-        print(f"{Fore.MAGENTA}[+]{Style.RESET_ALL} Running subcert query for additional subdomains")
-        subcert_query(target_domain, f"{target_domain}-subcert-results.txt")
-
+                    file.write(f"{ip}\n")
+            print(f"{Fore.CYAN}[+]{Style.RESET_ALL} Saved results in {Fore.GREEN}{target_domain}.txt{Style.RESET_ALL}")
         perf = (time.perf_counter() - start_time)
         took = int(perf)
         print(f"{Fore.MAGENTA}[+]{Style.RESET_ALL} Finished in {took} seconds")
@@ -448,5 +374,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
